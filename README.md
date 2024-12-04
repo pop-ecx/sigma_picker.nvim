@@ -11,11 +11,21 @@ someone else will benefit from it.
 Once you are comfortable with the rule you wrote, call the backend picker and choose
 ![choose backend](pick-backend.png)
 
+
 Now choose the preferred config
 ![choose config](pick-config.png)
 
+
 Your rule should be compiled and you'll get a result like this:
 ![generated rule](result.png)
+
+
+In action
+![in action](live.gif)
+
+## Requirements
+- telescope.nvim
+- sigmac installed in your path
 
 ## Installation
 Using lazy
@@ -30,8 +40,23 @@ require("lazy").setup({
 ```
 
 set your keymap like so 
-`vim.keymap.set('n', '<leader>sp', sigma_picker.sigma_picker, { noremap = true, silent = true })`
+
+```lua
+local spick = require("sigma_picker")
+spick.setup({})
+vim.keymap.set('n', '<leader>dz', spick.sigma_picker, {noremap = true , silent = true})
+```
 
 > I'm using sigmac. I know it's deprecated. Thanks for reminding me
 
-> I also wrote a silly little lsp to help me when writing sigma rules. You can get it [here](https://github.com/pop-ecx/sigma-ls.git)
+> I also wrote a silly little lsp to help me when writing sigma rules. You can get it [here](https://github.com/pop-ecx/sigma-ls.git). Works pretty well with the picker
+
+## Support
+Has been tested on neovim 0.9.5.
+
+Should work on neovim >=0.9.5
+
+## TODO
+- Add a few more backends to be converted
+- Move from sigmac to pysigma
+
