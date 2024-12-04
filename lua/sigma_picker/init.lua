@@ -3,7 +3,7 @@ local picker = require("sigma_picker.picker")
 
 local M = {}
 
-M.setup = config.setup()
-M.sigma_picker = picker.sigma_picker()
+M.setup = config.setup
+M.sigma_picker = picker.sigma_picker
 
 return M
