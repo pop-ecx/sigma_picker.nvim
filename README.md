@@ -21,8 +21,7 @@ Your rule should be compiled and you'll get a result like this:
 
 
 In action
-[![asciicast](https://asciinema.org/a/Lfqc0YPE4KAiiIfQPSm6Hg4n5.svg)](https://asciinema.org/a/Lfqc0YPE4KAiiIfQPSm6Hg4n5)
-
+![usage](live.gif)
 
 ## Requirements
 - telescope.nvim
