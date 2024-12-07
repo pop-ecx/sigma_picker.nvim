@@ -21,7 +21,7 @@ Your rule should be compiled and you'll get a result like this:
 
 
 In action
-![in action](live.gif)
+![usage](live.gif)
 
 ## Requirements
 - telescope.nvim
