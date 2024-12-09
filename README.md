@@ -7,7 +7,7 @@ I also write sigma rules a lot. To make my workflow a bit easier for me, I made 
 Sigma_picker.nvim helps me to streamline my workflow and do conversions without even thinking. I have been using it for a while and thought maybe
 someone else will benefit from it.
 
-## How it feels
+## :fire: How it feels
 Once you are comfortable with the rule you wrote, call the backend picker and choose
 ![choose backend](pick-backend.png)
 
@@ -23,12 +23,12 @@ Your rule should be compiled and you'll get a result like this:
 In action
 ![usage](live.gif)
 
-## Requirements
+## :star :Requirements
 - telescope.nvim
 - sigmac installed in your path
 
-## Installation
-Using lazy
+## :zap: Installation
+Using lazy for example:
 
 ```lua
 require("lazy").setup({
@@ -58,5 +58,5 @@ Should work on neovim >=0.9.5
 
 ## TODO
 - Add a few more backends to be converted
-- Move from sigmac to pysigma
+- Move from sigmac to sigma-cli
 
