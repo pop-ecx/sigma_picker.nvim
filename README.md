@@ -23,7 +23,7 @@ Your rule should be compiled and you'll get a result like this:
 In action
 ![usage](live.gif)
 
-## :star :Requirements
+## :star: Requirements
 - telescope.nvim
 - sigmac installed in your path
 
