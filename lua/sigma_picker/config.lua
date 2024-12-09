@@ -21,22 +21,8 @@ M.user_config = vim.tbl_deep_extend("force", {}, M.default_config)
 
 -- Setup function for user configuration
 M.setup = function(config)
-    if config and config.sigma_rules then
-        for backend, rules in pairs(config.sigma_rules) do
-            if not M.user_config.sigma_rules[backend] then
-                M.user_config.sigma_rules[backend] = rules
-            else
-                for _, rule in ipairs(rules) do
-                    if not vim.tbl_contains(M.user_config.sigma_rules[backend], rule) then
-                        table.insert(M.user_config.sigma_rules[backend], rule)
-                    end
-                end
-            end
-        end
-        config.sigma_rules = nil
-    end
-
     M.user_config = vim.tbl_deep_extend("force", M.user_config, config or {})
 end
+
 return M
 
