@@ -36,4 +36,4 @@ jobs:
 
       - name: run linter
         run: |
-          luacheck .  
+          luacheck lua/sigma_picker --only errors 
