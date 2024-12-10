@@ -59,4 +59,4 @@ Should work on neovim >=0.9.5
 ## TODO
 - Add a few more backends to be converted
 - Move from sigmac to sigma-cli
-
+- Setup function is still WIP
