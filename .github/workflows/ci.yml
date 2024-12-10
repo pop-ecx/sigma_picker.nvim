@@ -7,14 +7,17 @@ on:
     branches: main
 
 jobs:
-  name: Run Test
+  lint:
   runs-on: ${{ matrix.os }}
   strategy:
     matrix:
       os: [ubuntu-latest, macos-latest]
   steps:
-    - uses: actions/checkout@v3
-    - uses: rhysd/action-setup-vim@v1
+    - name: checkout
+      uses: actions/checkout@v3
+   
+    - name: Setup Neovim
+      uses: rhysd/action-setup-vim@v1
       id: vim
       with:
         neovim: true
