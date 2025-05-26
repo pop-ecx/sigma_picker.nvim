@@ -55,8 +55,8 @@ M.sigma_picker = function(opts)
                     local selected_config = selection.value
                     local current_file = vim.api.nvim_buf_get_name(0)
 
-                    if current_file == "" then
-                        print("No file opened in the current buffer!")
+                    if current_file == "" or not current_file:match("%.ya?ml$") then
+                        vim.notify("Please open a Sigma rule (.yml or .yaml) file", vim.log.levels.ERROR)
                         return
                     end
 
