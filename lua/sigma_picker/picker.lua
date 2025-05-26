@@ -103,7 +103,7 @@ M.sigma_picker = function(opts)
 
     pickers.new(opts, {
         prompt_title = "Sigma Rules Backend Picker",
-        finder = finders.new_table({ results = vim.tbl_keys(config.user_config.sigma_rules) }),
+        finder = finders.new_table({ results = vim.tbl_keys(sigma_rules) }),
         sorter = conf.generic_sorter(opts),
         attach_mappings = function(prompt_bufnr, map)
             actions.select_default:replace(function()
@@ -119,4 +119,3 @@ M.sigma_picker = function(opts)
 end
 
 return M
-
