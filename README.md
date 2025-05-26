@@ -47,7 +47,7 @@ spick.setup({})
 vim.keymap.set('n', '<leader>dz', spick.sigma_picker, {noremap = true , silent = true})
 ```
 
-> I'm using sigmac. I know it's deprecated. Thanks for reminding me
+> ~~I'm using sigmac. I know it's deprecated. Thanks for reminding me~~. Successfully moved to sigma-cli
 
 > I also wrote a silly little lsp to help me when writing sigma rules. You can get it [here](https://github.com/pop-ecx/sigma-ls.git). Works pretty well with the picker
 
@@ -57,6 +57,6 @@ Has been tested on neovim 0.9.5.
 Should work on neovim >=0.9.5
 
 ## TODO
-- [ ] Add a few more backends to be converted
-- [ ] Move from sigmac to sigma-cli
-- [ ] Setup function is still WIP
+- ~~[ ] Add a few more backends to be converted~~
+- [x] Move from sigmac to sigma-cli
+- ~~[ ] Setup function is still WIP~~
