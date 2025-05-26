@@ -74,14 +74,24 @@ M.sigma_picker = function(opts)
                         end,
                         on_stderr = function(_, data)
                             if data and #data > 0 then
-                                print("Error:", table.concat(data, "\n"))
+                                local filtered_data = vim.tbl_filter(function(line)
+                                    return line ~= nil and line:match("%S") and line ~= "Error:"
+                                end, data)
+                                if #filtered_data > 0 then
+                                    local message = table.concat(filtered_data, "\n")
+                                    if message:match("Parsing Sigma rules") then
+                                        vim.notify("Warning: " .. message, vim.log.levels.WARN)
+                                    else
+                                        vim.notify("Error: " .. message, vim.log.levels.ERROR)
+                                    end
+                                end
                             end
                         end,
                         on_exit = function(_, code)
                             if code == 0 then
-                                print("Backend converter completed successfully!")
+                                vim.notify("Backend converter completed successfully!", vim.log.levels.INFO)
                             else
-                                print("Backend converter exited with code:", code)
+                                vim.notify("Backend converter exited with code: " .. code, vim.log.levels.ERROR)
                             end
                         end,
                     })
