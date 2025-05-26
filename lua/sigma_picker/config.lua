@@ -1,28 +1,84 @@
 local M = {}
 
--- Default configuration
--- kibana-ndjson has issues...working on it
 M.default_config = {
-    sigma_rules = {
-        kibana = { "ecs-auditbeat-modules-enabled", "ecs-auditd","ecs-cloudtrail","ecs-dns","ecs-filebeat","ecs-okta","ecs-proxy","ecs-suricata","ecs-zeek-corelight","ecs-zeek-elastic-beats-implementation","elk-defaultindex","elk-defaultindex-filebeat","elk-defaultindex-logstash","elk-linux","elk-windows","elk-winlogbeat","elk-winlogbeat-sp","filebeat-defaultindex","helk","logstash-defaultindex","logstash-linux","logstash-windows","logstash-zeek-default-json","powershell","sysmon","windows-audit","windows-services","winlogbeat","winlogbeat-modules-enabled", "winlogbeat-old" },
-        devo = { "devo-network", "devo-web","devo-windows", "elk-defaultindex","elk-defaultindex-filebeat","elk-defaultindex-logstash","elk-linux","elk-windows","elk-winlogbeat","elk-winlogbeat-sp","powershell","sysmon","windows-audit","windows-services" },
-        splunk = { "elk-defaultindex", "elk-defaultindex-filebeat", "elk-defaultindex-logstash", "elk-linux","elk-windows", "elk-winlogbeat", "elk-winlogbeat-sp", "powershell", "splunk-windows", "splunk-windows-index", "splunk-zeek", "sysmon", "windows-audit", "windows-services" },
-        elastalert = { "ecs-auditbeat-modules-enabled", "ecs-auditd","ecs-cloudtrail","ecs-dns","ecs-filebeat","ecs-okta","ecs-proxy", "ecs-suricata", "ecs-zeek-corelight","ecs-zeek-elastic-beats-implementation","elk-defaultindex","elk-defaultindex-filebeat","elk-defaultindex-logstash","elk-linux","elk-windows","elk-winlogbeat","elk-winlogbeat-sp","filebeat-defaultindex","helk","logstash-defaultindex","logstash-linux","logstash-windows","logstash-zeek-default-json","powershell","sysmon","windows-audit","windows-services","winlogbeat","winlogbeat-modules-enabled", "winlogbeat-old" },
-        arcsight = { "arcsight","arcsight-zeek", "elk-defaultindex", "elk-defaultindex-logstash", "elk-defaultindex-filebeat", "elk-linux", "elk-windows", "elk-winlogbeat", "elk-winlogbeat-sp", "powershell", "sysmon", "windows-audit", "windows-services" },
-        athena = { "athena", "elk-defaultindex", "elk-defaultindex-logstash", "elk-defaultindex-filebeat", "elk-linux", "elk-windows", "elk-winlogbeat", "elk-winlogbeat-sp", "powershell", "sysmon", "windows-audit", "windows-services" },
-    },
-    backend_command = function(backend, config, file)
-        return "sigmac -t " .. backend .. " -c " .. config .. " " .. file
+    backend_command = function(backend, pipeline, file)
+        return "sigma convert -t " .. backend .. " -p " .. pipeline .. " " .. file
+    end,
+    sigma_cli_check = function()
+        if vim.fn.executable("sigma") == 1 then
+            return true
+        else
+            vim.notify("sigma-cli not found. Please install it from https://github.com/SigmaHQ/sigma-cli", vim.log.levels.ERROR)
+            return false
+        end
+    end,
+    get_sigma_targets = function()
+        if not M.default_config.sigma_cli_check() then
+            return {}
+        end
+        local result = vim.fn.system("sigma list targets")
+        if vim.v.shell_error ~= 0 or result:match("No backends installed") then
+            local plugin_list = vim.fn.system("sigma plugin list")
+            return { error = "No backends installed. Use 'sigma plugin list' to list available plugins:\n" .. plugin_list }
+        end
+        local targets = {}
+        for line in result:gmatch("[^\r\n]+") do
+            -- Skip header, footer, and empty lines
+            if not line:match("^%+") and not line:match("|%s*Identifier%s*|") and line:match("%S") then
+                -- Extract the first column (Identifier)
+                local target = line:match("^|%s*([^|]+)%s*|")
+                if target then
+                    target = target:gsub("^%s+", ""):gsub("%s+$", "") -- Trim whitespace
+                    if target ~= "" then -- Ensure non-empty after trimming
+                        table.insert(targets, target)
+                    end
+                end
+            end
+        end
+        return targets
+    end,
+    get_sigma_pipelines = function()
+        if not M.default_config.sigma_cli_check() then
+            return {}
+        end
+        local result = vim.fn.system("sigma list pipelines")
+        if vim.v.shell_error ~= 0 then
+            vim.notify("Failed to fetch Sigma pipelines: " .. result, vim.log.levels.ERROR)
+            return {}
+        end
+        local pipelines = {}
+        for line in result:gmatch("[^\r\n]+") do
+            -- Skip header, footer, and empty lines
+            if not line:match("^%+") and not line:match("|%s*Identifier%s*|") and line:match("%S") then
+                -- Extract the first column (Identifier)
+                local pipeline = line:match("^|%s*([^|]+)%s*|")
+                if pipeline then
+                    pipeline = pipeline:gsub("^%s+", ""):gsub("%s+$", "") -- Trim whitespace
+                    if pipeline ~= "" then -- Ensure non-empty after trimming
+                        table.insert(pipelines, pipeline)
+                    end
+                end
+            end
+        end
+        -- Create sigma_rules table mapping each backend to filtered pipelines
+        local sigma_rules = {}
+        local targets = M.default_config.get_sigma_targets()
+        if targets.error then
+            vim.notify(targets.error, vim.log.levels.ERROR)
+            return {}
+        end
+        for _, target in ipairs(targets) do
+            sigma_rules[target] = pipelines
+        end
+        return sigma_rules
+    end,
+    sigma_rules = function()
+        return M.default_config.get_sigma_pipelines()
     end,
 }
 
--- User-provided configuration
-M.user_config = vim.tbl_deep_extend("force", {}, M.default_config)
-
--- Setup function for user configuration
 M.setup = function(config)
-    M.user_config = vim.tbl_deep_extend("force", M.user_config, config or {})
+    M.user_config = vim.tbl_deep_extend("force", M.default_config, config or {})
 end
 
 return M
-
