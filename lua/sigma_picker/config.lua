@@ -23,13 +23,11 @@ M.default_config = {
         end
         local targets = {}
         for line in result:gmatch("[^\r\n]+") do
-            -- Skip header, footer, and empty lines
             if not line:match("^%+") and not line:match("|%s*Identifier%s*|") and line:match("%S") then
-                -- Extract the first column (Identifier)
                 local target = line:match("^|%s*([^|]+)%s*|")
                 if target then
-                    target = target:gsub("^%s+", ""):gsub("%s+$", "") -- Trim whitespace
-                    if target ~= "" then -- Ensure non-empty after trimming
+                    target = target:gsub("^%s+", ""):gsub("%s+$", "")
+                    if target ~= "" then
                         table.insert(targets, target)
                     end
                 end
@@ -48,19 +46,16 @@ M.default_config = {
         end
         local pipelines = {}
         for line in result:gmatch("[^\r\n]+") do
-            -- Skip header, footer, and empty lines
             if not line:match("^%+") and not line:match("|%s*Identifier%s*|") and line:match("%S") then
-                -- Extract the first column (Identifier)
                 local pipeline = line:match("^|%s*([^|]+)%s*|")
                 if pipeline then
-                    pipeline = pipeline:gsub("^%s+", ""):gsub("%s+$", "") -- Trim whitespace
-                    if pipeline ~= "" then -- Ensure non-empty after trimming
+                    pipeline = pipeline:gsub("^%s+", ""):gsub("%s+$", "")
+                    if pipeline ~= "" then
                         table.insert(pipelines, pipeline)
                     end
                 end
             end
         end
-        -- Create sigma_rules table mapping each backend to filtered pipelines
         local sigma_rules = {}
         local targets = M.default_config.get_sigma_targets()
         if targets.error then
