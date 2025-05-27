@@ -44,7 +44,7 @@ M.sigma_picker = function(opts)
         end
 
         pickers.new(opts, {
-            prompt_title = "Choose Configuration for " .. selected_backend,
+            prompt_title = "Choose Pipeline for " .. selected_backend,
             finder = finders.new_table({ results = configs }),
             sorter = conf.generic_sorter(opts),
             attach_mappings = function(prompt_bufnr, map)
