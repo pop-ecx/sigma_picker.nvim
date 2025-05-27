@@ -11,11 +11,40 @@ local M = {}
 M.sigma_picker = function(opts)
     opts = opts or {}
 
+    if not config.user_config or not config.user_config.sigma_cli_check then
+        vim.notify("sigma_cli_check function not found in sigma_picker.config.user_config", vim.log.levels.ERROR)
+        return
+    end
+
+    if not config.user_config.sigma_cli_check() then
+        return
+    end
+
+    local targets = config.user_config.get_sigma_targets()
+    if targets.error then
+        vim.notify(targets.error, vim.log.levels.ERROR)
+        return
+    end
+    if not next(targets) then
+        vim.notify("No Sigma backends available", vim.log.levels.WARN)
+        return
+    end
+
+    local sigma_rules = config.user_config.sigma_rules()
+    if not next(sigma_rules) then
+        vim.notify("No Sigma pipelines available", vim.log.levels.WARN)
+        return
+    end
+
     local function pick_config(selected_backend)
-        local configs = config.user_config.sigma_rules[selected_backend]
+        local configs = sigma_rules[selected_backend] or {}
+        if not next(configs) then
+            vim.notify("No pipelines available for " .. selected_backend, vim.log.levels.WARN)
+            return
+        end
 
         pickers.new(opts, {
-            prompt_title = "Choose Configuration for " .. selected_backend,
+            prompt_title = "Choose Pipeline for " .. selected_backend,
             finder = finders.new_table({ results = configs }),
             sorter = conf.generic_sorter(opts),
             attach_mappings = function(prompt_bufnr, map)
@@ -26,8 +55,8 @@ M.sigma_picker = function(opts)
                     local selected_config = selection.value
                     local current_file = vim.api.nvim_buf_get_name(0)
 
-                    if current_file == "" then
-                        print("No file opened in the current buffer!")
+                    if current_file == "" or not current_file:match("%.ya?ml$") then
+                        vim.notify("Please open a Sigma rule (.yml or .yaml) file", vim.log.levels.ERROR)
                         return
                     end
 
@@ -45,14 +74,24 @@ M.sigma_picker = function(opts)
                         end,
                         on_stderr = function(_, data)
                             if data and #data > 0 then
-                                print("Error:", table.concat(data, "\n"))
+                                local filtered_data = vim.tbl_filter(function(line)
+                                    return line ~= nil and line:match("%S") and line ~= "Error:"
+                                end, data)
+                                if #filtered_data > 0 then
+                                    local message = table.concat(filtered_data, "\n")
+                                    if message:match("Parsing Sigma rules") then
+                                        vim.notify("Warning: " .. message, vim.log.levels.WARN)
+                                    else
+                                        vim.notify("Error: " .. message, vim.log.levels.ERROR)
+                                    end
+                                end
                             end
                         end,
                         on_exit = function(_, code)
                             if code == 0 then
-                                print("Backend converter completed successfully!")
+                                vim.notify("Backend converter completed successfully!", vim.log.levels.INFO)
                             else
-                                print("Backend converter exited with code:", code)
+                                vim.notify("Backend converter exited with code: " .. code, vim.log.levels.ERROR)
                             end
                         end,
                     })
@@ -64,7 +103,7 @@ M.sigma_picker = function(opts)
 
     pickers.new(opts, {
         prompt_title = "Sigma Rules Backend Picker",
-        finder = finders.new_table({ results = vim.tbl_keys(config.user_config.sigma_rules) }),
+        finder = finders.new_table({ results = vim.tbl_keys(sigma_rules) }),
         sorter = conf.generic_sorter(opts),
         attach_mappings = function(prompt_bufnr, map)
             actions.select_default:replace(function()
@@ -80,4 +119,3 @@ M.sigma_picker = function(opts)
 end
 
 return M
-
