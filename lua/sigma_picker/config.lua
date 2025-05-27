@@ -18,8 +18,7 @@ M.default_config = {
         end
         local result = vim.fn.system("sigma list targets")
         if vim.v.shell_error ~= 0 or result:match("No backends installed") then
-            local plugin_list = vim.fn.system("sigma plugin list")
-            return { error = "No backends installed. Use 'sigma plugin list' to list available plugins:\n" .. plugin_list }
+            return { error = "No backends installed. Use 'sigma plugin list' to list available plugins" }
         end
         local targets = {}
         for line in result:gmatch("[^\r\n]+") do
