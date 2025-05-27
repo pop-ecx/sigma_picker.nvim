@@ -1,4 +1,7 @@
 # sigma_picker.nvim
+
+> This is picker v2. It uses sigma-cli now. If you'd want to access v1 that used sigmac go to picker1 branch
+
 pick and convert to specific backends for sigma rules while inside neovim
 
 I hate 2 things; excessive typing and Real Madrid :joy:
