@@ -6,7 +6,7 @@
 
 > This is picker v2. It uses sigma-cli now. If you'd want to access v1 that used sigmac go to picker1 branch
 
-pick and convert to specific backends for sigma rules while inside neovim
+Pick and convert to specific backends for sigma rules while inside neovim
 
 I hate 2 things; excessive typing and Real Madrid :joy:
 
@@ -32,7 +32,7 @@ In action
 
 ## :star: Requirements
 - telescope.nvim
-- sigmac installed in your path
+- sigma-cli installed in your path.
 
 ## :zap: Installation
 Using lazy for example:
@@ -53,6 +53,19 @@ local spick = require("sigma_picker")
 spick.setup({})
 vim.keymap.set('n', '<leader>dz', spick.sigma_picker, {noremap = true , silent = true})
 ```
+
+There is also a utility for installing sigma-cli backends and pipelines
+
+Add a keymap like below to use it
+
+```lua
+vim.keymap.set("n", "<leader>si", function()
+    require("sigma_picker.installer").install_sigma_target()
+end, { desc = "Install Sigma Target" })
+```
+or just run
+
+`:lua require("sigma_picker.installer").install_sigma_target()`
 
 > ~~I'm using sigmac. I know it's deprecated. Thanks for reminding me~~. Successfully moved to sigma-cli
 
