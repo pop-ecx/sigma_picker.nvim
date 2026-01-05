@@ -3,6 +3,7 @@
 
 [![License: Apache2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/apache-2-0)
 <img src="https://img.shields.io/badge/Maintained%3F-Yes-96c40f">
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/pop-ecx/sigma_picker.nvim)
 
 > This is picker v2. It uses sigma-cli now. If you'd want to access v1 that used sigmac go to picker1 branch
 
