@@ -112,4 +112,13 @@ M.install_sigma_target = function(opts)
     }):find()
 end
 
+M.refresh_cache = function()
+  local success, err = os.remove(cache_path)
+  if success then
+    vim.notify("✅ Sigma plugin cache cleared successfully", vim.log.levels.INFO)
+  else
+    vim.notify("ℹ️ Failed to clear sigma plugin cache: ", err, vim.log.levels.WARN)
+  end
+end
+
 return M
