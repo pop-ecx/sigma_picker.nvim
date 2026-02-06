@@ -3,29 +3,45 @@ local finders = require("telescope.finders")
 local actions = require("telescope.actions")
 local action_state = require("telescope.actions.state")
 local conf = require("telescope.config").values
+local cache_path = vim.fn.stdpath("data") .. "/sigma_cache.json"
 
 local M = {}
 
 M.install_sigma_target = function(opts)
     opts = opts or {}
-
-    local result = vim.fn.system("sigma plugin list")
-    if vim.v.shell_error ~= 0 then
-        vim.notify("Failed to list Sigma plugins:\n" .. result, vim.log.levels.ERROR)
-        return
-    end
-
     local available_targets = {}
-    for line in result:gmatch("[^\r\n]+") do
-        if not line:match("^%+") and not line:match("|%s*Identifier%s*|") and line:match("%S") then
-            local target = line:match("^|%s*([^|]+)%s*|")
-            if target then
-                target = target:gsub("^%s+", ""):gsub("%s+$", "")
-                if target ~= "" then
-                    table.insert(available_targets, target)
-                end
-            end
-        end
+
+    local cache_exists = io.open(cache_path, "r")
+    if cache_exists then
+        local data = cache_exists:read("*a")
+        cache_exists:close()
+        available_targets = vim.fn.json_decode(data)
+    else
+      vim.notify("First-time setup: Fetching available sigma targets. This may take a moment...", vim.log.levels.INFO)
+      vim.cmd("redraw")
+
+      local result = vim.fn.system("sigma plugin list")
+      if vim.v.shell_error ~= 0 then
+          vim.notify("Failed to list Sigma plugins:\n" .. result, vim.log.levels.ERROR)
+          return
+      end
+
+      for line in result:gmatch("[^\r\n]+") do
+          if not line:match("^%+") and not line:match("|%s*Identifier%s*|") and line:match("%S") then
+              local target = line:match("^|%s*([^|]+)%s*|")
+              if target then
+                  target = target:gsub("^%s+", ""):gsub("%s+$", "")
+                  if target ~= "" then
+                      table.insert(available_targets, target)
+                  end
+              end
+          end
+      end
+      local file = io.open(cache_path, "w")
+      if file then
+          file:write(vim.fn.json_encode(available_targets))
+          file:close()
+      end
     end
 
     if #available_targets == 0 then
@@ -94,6 +110,15 @@ M.install_sigma_target = function(opts)
             return true
         end,
     }):find()
+end
+
+M.refresh_cache = function()
+  local success, err = os.remove(cache_path)
+  if success then
+    vim.notify("✅ Sigma plugin cache cleared successfully", vim.log.levels.INFO)
+  else
+    vim.notify("ℹ️ Failed to clear sigma plugin cache: ", err, vim.log.levels.WARN)
+  end
 end
 
 return M

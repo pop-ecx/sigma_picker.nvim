@@ -68,6 +68,15 @@ or just run
 
 `:lua require("sigma_picker.installer").install_sigma_target()`
 
+Since version 1.2.1, sigma_picker creates a local cache the first time you try to
+install a sigma plugin. This helps speed up subsequent plugin installations. In
+case you want to clear the cache, run
+
+`lua require("sigma_picker.installer").refresh_cache()`
+
+> It doesn't actually refresh, it just removes the cache. You have to run the installer
+> again to get a new cache. All performance penalties will apply, just like installing the first time.
+
 > ~~I'm using sigmac. I know it's deprecated. Thanks for reminding me~~. Successfully moved to sigma-cli
 
 > I also wrote a silly little lsp to help me when writing sigma rules. You can get it [here](https://github.com/pop-ecx/sigma-ls.git). Works pretty well with the picker
