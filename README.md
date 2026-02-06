@@ -68,7 +68,7 @@ or just run
 
 `:lua require("sigma_picker.installer").install_sigma_target()`
 
-Since version 1.1.1, sigma_picker creates a local cache the first time you try to
+Since version 1.2.1, sigma_picker creates a local cache the first time you try to
 install a sigma plugin. This helps speed up subsequent plugin installations. In
 case you want to clear the cache, run
 
