@@ -4,6 +4,7 @@ local actions = require("telescope.actions")
 local action_state = require("telescope.actions.state")
 local conf = require("telescope.config").values
 local cache_path = vim.fn.stdpath("data") .. "/sigma_cache.json"
+local entry_display = require("telescope.pickers.entry_display")
 
 local M = {}
 
@@ -27,13 +28,13 @@ M.install_sigma_target = function(opts)
       end
 
       for line in result:gmatch("[^\r\n]+") do
-          if not line:match("^%+") and not line:match("|%s*Identifier%s*|") and line:match("%S") then
-              local target = line:match("^|%s*([^|]+)%s*|")
-              if target then
-                  target = target:gsub("^%s+", ""):gsub("%s+$", "")
-                  if target ~= "" then
-                      table.insert(available_targets, target)
-                  end
+          if line:match("^|") and not line:match("Identifier") then
+              local id, _, _, _, compat = line:match("^|%s*([^|]+)%s*|%s*([^|]+)%s*|%s*([^|]+)%s*|%s*([^|]+)%s*|%s*([^|]+)%s*|")
+              if id and id:match("%S") then
+                  table.insert(available_targets, {
+                      id = id:gsub("%s+", ""),
+                      compatible = compat:gsub("%s+", ""):lower() == "yes"
+                  })
               end
           end
       end
@@ -49,9 +50,36 @@ M.install_sigma_target = function(opts)
         return
     end
 
+    local displayer = entry_display.create {
+        separator = " ",
+        items = {
+            { width = 25 },
+            { remaining = true },
+        },
+    }
+
+    local make_display = function(entry)
+        local hl = entry.compatible and "TelescopeResultsIdentifier" or "ErrorMsg"
+        return displayer {
+            { entry.id, hl },
+            { entry.compatible and "" or " (Incompatible)", "Comment" },
+        }
+    end
+
     pickers.new(opts, {
         prompt_title = "Install Sigma Target",
-        finder = finders.new_table { results = available_targets },
+        finder = finders.new_table {
+            results = available_targets,
+            entry_maker = function(entry)
+                return {
+                    value = entry.id,
+                    display = make_display,
+                    ordinal = entry.id,
+                    compatible = entry.compatible,
+                    id = entry.id,
+                }
+            end,
+        },
         sorter = conf.generic_sorter(opts),
         attach_mappings = function(prompt_bufnr, _)
             actions.select_default:replace(function()
