@@ -30,12 +30,12 @@ jobs:
           luaVersion: "luajit-openresty"
 
       - name: luarocks
-        uses: leafo/gh-actions-luarocks@v4
+        uses: leafo/gh-actions-luarocks@v5
 
       - name: Install dependencies
         shell: bash
         run: |
-          luarocks install luacheck
+          luarocks install luacheck --only-server https://raw.githubusercontent.com/rocks-moonscript-org/moonrocks-mirror/daab2726276e3282dc347b89a42a5107c3500567
 
       - name: run linter
         run: |
