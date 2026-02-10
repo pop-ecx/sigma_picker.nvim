@@ -35,7 +35,7 @@ jobs:
       - name: Install dependencies
         shell: bash
         run: |
-          luarocks install luacheck --only-server=https://luarocks.org
+          luarocks install https://raw.githubusercontent.com/lunarmodules/luacheck/master/luacheck-dev-1.rockspec
 
       - name: run linter
         run: |
