@@ -102,6 +102,8 @@ FEATURES                                                  *sigma_picker-features
 - Strips empty lines from `sigma-cli` output.
 - Displays conversion results in a floating window.
 - Handles `sigma-cli` errors with user-friendly notifications.
+- Install sigma plugins from inside Neovim.
+- View installed targets and pipelines from inside Neovim.
 
 ==============================================================================
 TROUBLESHOOTING                                                *sigma_picker-tshoot*
