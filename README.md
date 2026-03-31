@@ -72,7 +72,7 @@ Since version 1.2.1, sigma_picker creates a local cache the first time you try t
 install a sigma plugin. This helps speed up subsequent plugin installations. In
 case you want to clear the cache, run
 
-`lua require("sigma_picker.installer").refresh_cache()`
+`:lua require("sigma_picker.installer").refresh_cache()`
 
 > It doesn't actually refresh, it just removes the cache. You have to run the installer
 > again to get a new cache. All performance penalties will apply, just like installing the first time.
@@ -81,9 +81,17 @@ Check installed targets or pipelines??
 
 run:
 
-`lua require("sigma_picker.targets").list_targets()` or
+`:lua require("sigma_picker.targets").list_targets()` or
 
-`lua require("sigma_picker.targets").list_pipelines()`
+`:lua require("sigma_picker.targets").list_pipelines()`
+
+Since version 1.2.2, you can also uninstall plugins. The local cache now has a
+way to track installed plugins. To uninstall a plugin, run
+
+`:lua require("sigma_picker.installer").uninstall_sigma_target()`
+
+This will bring up a picker with all installed plugins. Choose the one you want
+to uninstall and it will be removed from your system. The cache will update accordingly.
 
 > ~~I'm using sigmac. I know it's deprecated. Thanks for reminding me~~. Successfully moved to sigma-cli
 
