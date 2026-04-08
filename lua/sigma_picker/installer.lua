@@ -166,10 +166,16 @@ M.uninstall_sigma_target = function(opts)
     local installed_plugins = {}
     for line in result:gmatch("[^\r\n]+") do
         if not line:match("^%+") and not line:match("|%s*Identifier%s*|") and line:match("%S") then
-            local plugin = line:match("^|[^|]+|[^|]+|[^|]+|%s*([^|]+)%s*|")
-            if plugin then
-                plugin = vim.trim(plugin)
-                if plugin ~= "" and not seen[plugin] then
+            local col1, col2, col3, col4 = line:match("^|%s*([^|]-)%s*|%s*([^|]-)%s*|%s*([^|]-)%s*|%s*([^|]-)%s*|")
+            -- col1 must be a non-empty identifier (not a blank continuation row)
+            -- col4 must not be Yes/No (guards against misaligned rows)
+            -- This prevents a bug which caused an extra plugin called "Yes" to
+            -- be added when the first plugin had a long name that wrapped onto
+            -- a second line, causing the "Yes" in the compatibility column to
+            -- be misinterpreted as a plugin name.
+            if col1 and col1:match("%S") and col4 then
+                local plugin = vim.trim(col4)
+                if plugin ~= "" and plugin:lower() ~= "yes" and plugin:lower() ~= "no" and not seen[plugin] then
                     seen[plugin] = true
                     table.insert(installed_plugins, plugin)
                 end
