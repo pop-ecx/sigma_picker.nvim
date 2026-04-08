@@ -25,18 +25,6 @@ local function write_cache(cache)
     end
 end
 
-local function update_installed(id, state)
-    local cache = read_cache()
-    if not cache then return end
-    for _, entry in ipairs(cache) do
-        if entry.id == id then
-            entry.installed = state
-            break
-        end
-    end
-    write_cache(cache)
-end
-
 M.install_sigma_target = function(opts)
     opts = opts or {}
     local available_targets = {}
@@ -61,7 +49,6 @@ M.install_sigma_target = function(opts)
                     table.insert(available_targets, {
                         id = id:gsub("%s+", ""),
                         compatible = compat:gsub("%s+", ""):lower() == "yes",
-                        installed = false,
                     })
                 end
             end
@@ -141,12 +128,10 @@ M.install_sigma_target = function(opts)
 
                         if output:match("Successfully installed plugin") then
                             vim.schedule(function()
-                                update_installed(chosen, true)
                                 vim.notify("✅ Installed: " .. chosen, vim.log.levels.INFO)
                             end)
                         elseif output:match("already installed") or error_output:match("already installed") then
                             vim.schedule(function()
-                                update_installed(chosen, true)
                                 vim.notify("ℹ️ Already installed: " .. chosen, vim.log.levels.INFO)
                             end)
                         elseif code == 0 then
@@ -166,21 +151,35 @@ M.install_sigma_target = function(opts)
     }):find()
 end
 
--- Sigma doesn't provide a way to list installed plugins only afaik,
--- so we rely on our cache to determine which plugins are installed.
+-- Since sigma-cli version 2.0.2, we can list installed plugins with `sigma list targets` 
+-- and parse the output to find installed plugins. This is more reliable than maintaining our own cache of installed plugins.
 M.uninstall_sigma_target = function(opts)
     opts = opts or {}
 
-    local cache = read_cache()
-    if not cache then
-        vim.notify("No plugin cache found. Try installing a plugin first.", vim.log.levels.WARN)
+    local result = vim.fn.system("sigma list targets")
+    if vim.v.shell_error ~= 0 or result:match("No backends installed") then
+        vim.notify("No installed Sigma plugins found to uninstall.", vim.log.levels.WARN)
         return
     end
 
+    local seen = {}
     local installed_plugins = {}
-    for _, entry in ipairs(cache) do
-        if entry.installed == true then
-            table.insert(installed_plugins, entry.id)
+    for line in result:gmatch("[^\r\n]+") do
+        if not line:match("^%+") and not line:match("|%s*Identifier%s*|") and line:match("%S") then
+            local col1, col2, col3, col4 = line:match("^|%s*([^|]-)%s*|%s*([^|]-)%s*|%s*([^|]-)%s*|%s*([^|]-)%s*|")
+            -- col1 must be a non-empty identifier (not a blank continuation row)
+            -- col4 must not be Yes/No (guards against misaligned rows)
+            -- This prevents a bug which caused an extra plugin called "Yes" to
+            -- be added when the first plugin had a long name that wrapped onto
+            -- a second line, causing the "Yes" in the compatibility column to
+            -- be misinterpreted as a plugin name.
+            if col1 and col1:match("%S") and col4 then
+                local plugin = vim.trim(col4)
+                if plugin ~= "" and plugin:lower() ~= "yes" and plugin:lower() ~= "no" and not seen[plugin] then
+                    seen[plugin] = true
+                    table.insert(installed_plugins, plugin)
+                end
+            end
         end
     end
 
@@ -254,7 +253,6 @@ M.uninstall_sigma_target = function(opts)
 
                         if output:match("Successfully uninstalled plugin") then
                             vim.schedule(function()
-                                update_installed(chosen, false)
                                 vim.notify("✅ Uninstalled: " .. chosen, vim.log.levels.INFO)
                             end)
                         elseif code == 0 then

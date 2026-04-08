@@ -85,8 +85,9 @@ run:
 
 `:lua require("sigma_picker.targets").list_pipelines()`
 
-Since version 1.2.2, you can also uninstall plugins. The local cache now has a
-way to track installed plugins. To uninstall a plugin, run
+Since version 1.2.2, you can also uninstall plugins. ~The local cache now has a
+way to track installed plugins~ we no longer need local cache tracking [see here](https://github.com/SigmaHQ/sigma-cli/releases/tag/v2.0.2).
+To uninstall a plugin, run
 
 `:lua require("sigma_picker.installer").uninstall_sigma_target()`
 
