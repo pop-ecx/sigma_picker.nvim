@@ -1,10 +1,5 @@
-local pickers = require("telescope.pickers")
-local finders = require("telescope.finders")
-local actions = require("telescope.actions")
-local action_state = require("telescope.actions.state")
-local conf = require("telescope.config").values
 local cache_path = vim.fn.stdpath("data") .. "/sigma_cache.json"
-local entry_display = require("telescope.pickers.entry_display")
+local picker_strategy = require("sigma_picker.picker_strategy")
 
 local M = {}
 
@@ -23,6 +18,16 @@ local function write_cache(cache)
         file:write(vim.fn.json_encode(cache))
         file:close()
     end
+end
+
+local function make_install_display(entry)
+    local compat = entry.compatible and "" or " (Incompatible)"
+    local hl = entry.compatible and "TelescopeResultsIdentifier" or "ErrorMsg"
+    return { { entry.id, hl }, { compat, "Comment" } }
+end
+
+local function make_uninstall_display(entry)
+    return { { entry.id, "TelescopeResultsIdentifier" }, { " (installed)", "Comment" } }
 end
 
 M.install_sigma_target = function(opts)
@@ -61,98 +66,62 @@ M.install_sigma_target = function(opts)
         return
     end
 
-    local displayer = entry_display.create {
-        separator = " ",
-        items = {
-            { width = 25 },
-            { remaining = true },
-        },
-    }
-
-    local make_display = function(entry)
-        local hl = entry.compatible and "TelescopeResultsIdentifier" or "ErrorMsg"
-        return displayer {
-            { entry.id, hl },
-            { entry.compatible and "" or " (Incompatible)", "Comment" },
-        }
+    local strategy = picker_strategy.get()
+    if not strategy then
+        return
     end
 
-    pickers.new(opts, {
-        prompt_title = "Install Sigma Target",
-        finder = finders.new_table {
-            results = available_targets,
-            entry_maker = function(entry)
-                return {
-                    value = entry.id,
-                    display = make_display,
-                    ordinal = entry.id,
-                    compatible = entry.compatible,
-                    id = entry.id,
-                }
+    strategy.pick_with_display(opts, available_targets, "Install Sigma Target", make_install_display, function(chosen)
+        local cmd = "sigma plugin install " .. chosen
+        local stdout, stderr = {}, {}
+
+        vim.fn.jobstart(cmd, {
+            stdout_buffered = true,
+            stderr_buffered = true,
+            on_stdout = function(_, data)
+                if data then
+                    for _, line in ipairs(data) do
+                        if line ~= "" then
+                            table.insert(stdout, line)
+                        end
+                    end
+                end
             end,
-        },
-        sorter = conf.generic_sorter(opts),
-        attach_mappings = function(prompt_bufnr, _)
-            actions.select_default:replace(function()
-                local selection = action_state.get_selected_entry()
-                actions.close(prompt_bufnr)
-
-                local chosen = selection.value
-                local cmd = "sigma plugin install " .. chosen
-                local stdout, stderr = {}, {}
-
-                vim.fn.jobstart(cmd, {
-                    stdout_buffered = true,
-                    stderr_buffered = true,
-                    on_stdout = function(_, data)
-                        if data then
-                            for _, line in ipairs(data) do
-                                if line ~= "" then
-                                    table.insert(stdout, line)
-                                end
-                            end
+            on_stderr = function(_, data)
+                if data then
+                    for _, line in ipairs(data) do
+                        if line ~= "" then
+                            table.insert(stderr, line)
                         end
-                    end,
-                    on_stderr = function(_, data)
-                        if data then
-                            for _, line in ipairs(data) do
-                                if line ~= "" then
-                                    table.insert(stderr, line)
-                                end
-                            end
-                        end
-                    end,
-                    on_exit = function(_, code)
-                        local output = table.concat(stdout, "\n")
-                        local error_output = table.concat(stderr, "\n")
+                    end
+                end
+            end,
+            on_exit = function(_, code)
+                local output = table.concat(stdout, "\n")
+                local error_output = table.concat(stderr, "\n")
 
-                        if output:match("Successfully installed plugin") then
-                            vim.schedule(function()
-                                vim.notify("✅ Installed: " .. chosen, vim.log.levels.INFO)
-                            end)
-                        elseif output:match("already installed") or error_output:match("already installed") then
-                            vim.schedule(function()
-                                vim.notify("ℹ️ Already installed: " .. chosen, vim.log.levels.INFO)
-                            end)
-                        elseif code == 0 then
-                            vim.schedule(function()
-                                vim.notify("⚠️ Installed, but unexpected output:\n" .. output, vim.log.levels.WARN)
-                            end)
-                        else
-                            vim.schedule(function()
-                                vim.notify("❌ Failed to install '" .. chosen .. "':\n" .. error_output, vim.log.levels.ERROR)
-                            end)
-                        end
-                    end,
-                })
-            end)
-            return true
-        end,
-    }):find()
+                if output:match("Successfully installed plugin") then
+                    vim.schedule(function()
+                        vim.notify("✅ Installed: " .. chosen, vim.log.levels.INFO)
+                    end)
+                elseif output:match("already installed") or error_output:match("already installed") then
+                    vim.schedule(function()
+                        vim.notify("ℹ️ Already installed: " .. chosen, vim.log.levels.INFO)
+                    end)
+                elseif code == 0 then
+                    vim.schedule(function()
+                        vim.notify("⚠️ Installed, but unexpected output:\n" .. output, vim.log.levels.WARN)
+                    end)
+                else
+                    vim.schedule(function()
+                        vim.notify("❌ Failed to install '" .. chosen .. "':\n" .. error_output, vim.log.levels.ERROR)
+                    end)
+                end
+            end,
+        })
+    end)
 end
 
--- Since sigma-cli version 2.0.2, we can list installed plugins with `sigma list targets` 
--- and parse the output to find installed plugins. This is more reliable than maintaining our own cache of installed plugins.
 M.uninstall_sigma_target = function(opts)
     opts = opts or {}
 
@@ -167,17 +136,11 @@ M.uninstall_sigma_target = function(opts)
     for line in result:gmatch("[^\r\n]+") do
         if not line:match("^%+") and not line:match("|%s*Identifier%s*|") and line:match("%S") then
             local col1, col2, col3, col4 = line:match("^|%s*([^|]-)%s*|%s*([^|]-)%s*|%s*([^|]-)%s*|%s*([^|]-)%s*|")
-            -- col1 must be a non-empty identifier (not a blank continuation row)
-            -- col4 must not be Yes/No (guards against misaligned rows)
-            -- This prevents a bug which caused an extra plugin called "Yes" to
-            -- be added when the first plugin had a long name that wrapped onto
-            -- a second line, causing the "Yes" in the compatibility column to
-            -- be misinterpreted as a plugin name.
             if col1 and col1:match("%S") and col4 then
                 local plugin = vim.trim(col4)
                 if plugin ~= "" and plugin:lower() ~= "yes" and plugin:lower() ~= "no" and not seen[plugin] then
                     seen[plugin] = true
-                    table.insert(installed_plugins, plugin)
+                    table.insert(installed_plugins, { id = plugin })
                 end
             end
         end
@@ -188,88 +151,56 @@ M.uninstall_sigma_target = function(opts)
         return
     end
 
-    local displayer = entry_display.create {
-        separator = " ",
-        items = {
-            { width = 25 },
-            { remaining = true },
-        },
-    }
-
-    local make_display = function(entry)
-        return displayer {
-            { entry.id, "TelescopeResultsIdentifier" },
-            { "(installed)", "Comment" },
-        }
+    local strategy = picker_strategy.get()
+    if not strategy then
+        return
     end
 
-    pickers.new(opts, {
-        prompt_title = "Uninstall Sigma Plugin",
-        finder = finders.new_table {
-            results = installed_plugins,
-            entry_maker = function(entry)
-                return {
-                    value = entry,
-                    display = make_display,
-                    ordinal = entry,
-                    id = entry,
-                }
+    strategy.pick_with_display(opts, installed_plugins, "Uninstall Sigma Plugin", make_uninstall_display, function(chosen)
+        local cmd = "sigma plugin uninstall " .. chosen
+        local stdout, stderr = {}, {}
+
+        vim.fn.jobstart(cmd, {
+            stdout_buffered = true,
+            stderr_buffered = true,
+            on_stdout = function(_, data)
+                if data then
+                    for _, line in ipairs(data) do
+                        if line ~= "" then
+                            table.insert(stdout, line)
+                        end
+                    end
+                end
             end,
-        },
-        sorter = conf.generic_sorter(opts),
-        attach_mappings = function(prompt_bufnr, _)
-            actions.select_default:replace(function()
-                local selection = action_state.get_selected_entry()
-                actions.close(prompt_bufnr)
-
-                local chosen = selection.value
-                local cmd = "sigma plugin uninstall " .. chosen
-                local stdout, stderr = {}, {}
-
-                vim.fn.jobstart(cmd, {
-                    stdout_buffered = true,
-                    stderr_buffered = true,
-                    on_stdout = function(_, data)
-                        if data then
-                            for _, line in ipairs(data) do
-                                if line ~= "" then
-                                    table.insert(stdout, line)
-                                end
-                            end
+            on_stderr = function(_, data)
+                if data then
+                    for _, line in ipairs(data) do
+                        if line ~= "" then
+                            table.insert(stderr, line)
                         end
-                    end,
-                    on_stderr = function(_, data)
-                        if data then
-                            for _, line in ipairs(data) do
-                                if line ~= "" then
-                                    table.insert(stderr, line)
-                                end
-                            end
-                        end
-                    end,
-                    on_exit = function(_, code)
-                        local output = table.concat(stdout, "\n")
-                        local error_output = table.concat(stderr, "\n")
+                    end
+                end
+            end,
+            on_exit = function(_, code)
+                local output = table.concat(stdout, "\n")
+                local error_output = table.concat(stderr, "\n")
 
-                        if output:match("Successfully uninstalled plugin") then
-                            vim.schedule(function()
-                                vim.notify("✅ Uninstalled: " .. chosen, vim.log.levels.INFO)
-                            end)
-                        elseif code == 0 then
-                            vim.schedule(function()
-                                vim.notify("⚠️ Uninstalled, but unexpected output:\n" .. output, vim.log.levels.WARN)
-                            end)
-                        else
-                            vim.schedule(function()
-                                vim.notify("❌ Failed to uninstall '" .. chosen .. "':\n" .. error_output, vim.log.levels.ERROR)
-                            end)
-                        end
-                    end,
-                })
-            end)
-            return true
-        end,
-    }):find()
+                if output:match("Successfully uninstalled plugin") then
+                    vim.schedule(function()
+                        vim.notify("✅ Uninstalled: " .. chosen, vim.log.levels.INFO)
+                    end)
+                elseif code == 0 then
+                    vim.schedule(function()
+                        vim.notify("⚠️ Uninstalled, but unexpected output:\n" .. output, vim.log.levels.WARN)
+                    end)
+                else
+                    vim.schedule(function()
+                        vim.notify("❌ Failed to uninstall '" .. chosen .. "':\n" .. error_output, vim.log.levels.ERROR)
+                    end)
+                end
+            end,
+        })
+    end)
 end
 
 M.refresh_cache = function()
@@ -277,7 +208,7 @@ M.refresh_cache = function()
     if success then
         vim.notify("✅ Sigma plugin cache cleared successfully", vim.log.levels.INFO)
     else
-        vim.notify("ℹ️ Failed to clear sigma plugin cache: ", err, vim.log.levels.WARN)
+        vim.notify("ℹ️ Failed to clear sigma plugin cache: " .. (err or "unknown"), vim.log.levels.WARN)
     end
 end
 
