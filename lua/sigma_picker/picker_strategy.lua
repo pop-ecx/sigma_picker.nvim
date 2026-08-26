@@ -26,7 +26,7 @@ end
 
 function M.get()
     local backend = config.user_config.picker_backend or "auto"
-    
+
     if backend == "telescope" then
         local strat = load_telescope()
         if strat then
@@ -41,17 +41,17 @@ function M.get()
         vim.notify("Native picker not available", vim.log.levels.ERROR)
         return nil
     end
-    
+
     local strat = load_telescope()
     if strat then
         return strat
     end
-    
+
     strat = load_native()
     if strat then
         return strat
     end
-    
+
     vim.notify("No picker backend available", vim.log.levels.ERROR)
     return nil
 end
