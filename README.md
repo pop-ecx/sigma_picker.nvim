@@ -32,18 +32,28 @@ In action
 ![usage](live.gif)
 
 ## :star: Requirements
-- telescope.nvim
 - sigma-cli installed in your path.
+- **Optional:** telescope.nvim (for enhanced picker UI)
+
+If telescope.nvim is not installed, the plugin will fall back to Neovim's built-in `vim.ui.select`.
 
 ## :zap: Installation
 Using lazy for example:
 
+**With telescope (recommended for best experience):**
 ```lua
 require("lazy").setup({
     {
         "pop-ecx/sigma_picker.nvim",
         dependencies = { "nvim-telescope/telescope.nvim" },
     },
+})
+```
+
+**Without telescope (uses native vim.ui.select):**
+```lua
+require("lazy").setup({
+    "pop-ecx/sigma_picker.nvim",
 })
 ```
 
@@ -54,6 +64,18 @@ local spick = require("sigma_picker")
 spick.setup({})
 vim.keymap.set('n', '<leader>dz', spick.sigma_picker, {noremap = true , silent = true})
 ```
+
+## :gear: Configuration
+
+```lua
+spick.setup({
+    picker_backend = "auto", -- "auto" | "telescope" | "native"
+})
+```
+
+- `picker_backend = "auto"` (default): Try telescope first, fallback to native
+- `picker_backend = "telescope"`: Force telescope (error if not available)
+- `picker_backend = "native"`: Force native vim.ui.select
 
 There is also a utility for installing sigma-cli backends and pipelines
 

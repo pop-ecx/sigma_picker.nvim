@@ -1,6 +1,7 @@
 local M = {}
 
 M.default_config = {
+    picker_backend = "auto",
     backend_command = function(backend, pipeline, file)
         return "sigma convert -t " .. backend .. " -p " .. pipeline .. " " .. file
     end,
