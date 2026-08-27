@@ -1,140 +1,176 @@
-*sigma_picker.txt*  Sigma Picker: Convert Sigma rules in Neovim with Telescope
+*sigma_picker.nvim.txt*     Convert to specific sigma backends right in Neovim
 
 ==============================================================================
-INTRODUCTION                                                        *sigma_picker*
+Table of Contents                        *sigma_picker.nvim-table-of-contents*
 
-Sigma Picker is a Neovim plugin that integrates with `sigma-cli` to convert Sigma
-rules (`.yml` or `.yaml` files) into various backend formats using Telescope for
-interactive selection of backends and pipelines.
-
-Author: Oliver Mulwa (pop-ecx)
-Version: 0.2.0
-License: Apache-2.0
+1. sigma_picker.nvim                     |sigma_picker.nvim-sigma_picker.nvim|
+  - :fire: How it feels|sigma_picker.nvim-sigma_picker.nvim-:fire:-how-it-feels|
+  - :star: Requirements|sigma_picker.nvim-sigma_picker.nvim-:star:-requirements|
+  - :zap: Installation|sigma_picker.nvim-sigma_picker.nvim-:zap:-installation|
+  - :gear: Configuration|sigma_picker.nvim-sigma_picker.nvim-:gear:-configuration|
+  - Support                      |sigma_picker.nvim-sigma_picker.nvim-support|
+  - TODO                            |sigma_picker.nvim-sigma_picker.nvim-todo|
+2. Links                                             |sigma_picker.nvim-links|
 
 ==============================================================================
-INSTALLATION                                              *sigma_picker-install*
+1. sigma_picker.nvim                     *sigma_picker.nvim-sigma_picker.nvim*
 
-Use your preferred plugin manager to install `sigma_picker.nvim`.
+<https://opensource.org/licenses/apache-2-0>
+<https://deepwiki.com/pop-ecx/sigma_picker.nvim>
 
-With `lazy.nvim`:
->
-    {
+
+  This is picker v2. It uses sigma-cli now. If you’d want to access v1 that
+  used sigmac go to picker1 branch
+Pick and convert to specific backends for sigma rules while inside neovim
+
+I hate 2 things; excessive typing and Real Madrid :joy:
+
+I also write sigma rules a lot. To make my workflow a bit easier for me, I made
+this plugin to convert to a specific backend with a few keystrokes.
+Sigma_picker.nvim helps me to streamline my workflow and do conversions without
+even thinking. I have been using it for a while and thought maybe someone else
+will benefit from it.
+
+
+:FIRE: HOW IT FEELS  *sigma_picker.nvim-sigma_picker.nvim-:fire:-how-it-feels*
+
+Once you are comfortable with the rule you wrote, call the backend picker and
+choose
+
+Now choose the preferred config
+
+Your rule should be compiled and you’ll get a result like this:
+
+In action
+
+
+:STAR: REQUIREMENTS  *sigma_picker.nvim-sigma_picker.nvim-:star:-requirements*
+
+- sigma-cli installed in your path.
+- **Optional:** telescope.nvim (for enhanced picker UI)
+
+If telescope.nvim is not installed, the plugin will fall back to Neovim’s
+built-in `vim.ui.select`.
+
+
+:ZAP: INSTALLATION    *sigma_picker.nvim-sigma_picker.nvim-:zap:-installation*
+
+Using lazy for example:
+
+**With telescope (recommended for best experience):**
+
+>lua
+    require("lazy").setup({
+        {
+            "pop-ecx/sigma_picker.nvim",
+            dependencies = { "nvim-telescope/telescope.nvim" },
+        },
+    })
+<
+
+**Without telescope (uses native vim.ui.select):**
+
+>lua
+    require("lazy").setup({
         "pop-ecx/sigma_picker.nvim",
-        dependencies = { "nvim-telescope/telescope.nvim" },
-        config = function()
-            require("sigma_picker").setup({})
-        end,
-    }
-<
-With `packer.nvim`:
->
-    use "pop-ecx/sigma_picker.nvim"
-<
-After installation, ensure `sigma-cli` is installed:
->
-    pip install sigma-cli
-<
-Install a Sigma backend (e.g., Splunk):
->
-    sigma plugin install splunk
-<
-==============================================================================
-USAGE                                                        *sigma_picker-usage*
-
-1. Open a Sigma rule file (`.yml` or `.yaml`).
-2. Press `<leader>sp` to launch the Telescope picker.
-3. Select a backend (e.g., `lucene`, `eql`, `esql`, `elastalert`).
-4. Select a pipeline (e.g., `ecs-filebeat`).
-5. View the conversion output in a floating window.
-
-Example keymap in `init.lua`:
->
-    vim.keymap.set("n", "<leader>sp", require("sigma_picker").sigma_picker, {
-        noremap = true, silent = true
     })
 <
-==============================================================================
-CONFIGURATION                                             *sigma_picker-config*
 
-Call `require("sigma_picker").setup({})` to configure the plugin. Available options:
+set your keymap like so
 
-- `backend_command`: Function to generate the `sigma convert` command.
-  Default:
->
-    function(backend, pipeline, file)
-        return "sigma convert -t " .. backend .. " -p " .. pipeline .. " " .. file
-    end
+>lua
+    local spick = require("sigma_picker")
+    spick.setup({})
+    vim.keymap.set('n', '<leader>dz', spick.sigma_picker, {noremap = true , silent = true})
 <
-Example configuration:
->
-    require("sigma_picker").setup({
-        backend_command = function(backend, pipeline, file)
-            local cmd = "sigma convert -t " .. backend .. " -p " .. pipeline .. " " .. file
-            if backend == "kibana" then
-                cmd = cmd .. " -f ndjson"
-            end
-            return cmd
-        end
+
+
+:GEAR: CONFIGURATION*sigma_picker.nvim-sigma_picker.nvim-:gear:-configuration*
+
+>lua
+    spick.setup({
+        picker_backend = "auto", -- "auto" | "telescope" | "native"
     })
 <
-==============================================================================
-COMMANDS                                                  *sigma_picker-commands*
 
-No custom commands are defined yet. Use the `<leader>sp` keymap to invoke the picker.
+- `picker_backend = "auto"` (default): Try telescope first, fallback to native
+- `picker_backend = "telescope"`: Force telescope (error if not available)
+- `picker_backend = "native"`: Force native vim.ui.select
 
-==============================================================================
-MAPPINGS                                                  *sigma_picker-mappings*
+There is also a utility for installing sigma-cli backends and pipelines
 
-- `<leader>sp`: Opens the Telescope picker to select a backend and pipeline.
+Add a keymap like below to use it
 
-To customize:
->
-    vim.keymap.set("n", "<your-key>", require("sigma_picker").sigma_picker, {
-        noremap = true, silent = true
-    })
+>lua
+    vim.keymap.set("n", "<leader>si", function()
+        require("sigma_picker.installer").install_sigma_target()
+    end, { desc = "Install Sigma Target" })
 <
+
+or just run
+
+`:lua require("sigma_picker.installer").install_sigma_target()`
+
+Since version 1.2.1, sigma_picker creates a local cache the first time you try
+to install a sigma plugin. This helps speed up subsequent plugin installations.
+In case you want to clear the cache, run
+
+`:lua require("sigma_picker.installer").refresh_cache()`
+
+
+  It doesn’t actually refresh, it just removes the cache. You have to run the
+  installer again to get a new cache. All performance penalties will apply, just
+  like installing the first time.
+Check installed targets or pipelines??
+
+run:
+
+`:lua require("sigma_picker.targets").list_targets()` or
+
+`:lua require("sigma_picker.targets").list_pipelines()`
+
+Since version 1.2.2, you can also uninstall plugins. ~The local cache now has a
+way to track installed plugins~ we no longer need local cache tracking see here
+<https://github.com/SigmaHQ/sigma-cli/releases/tag/v2.0.2>. To uninstall a
+plugin, run
+
+`:lua require("sigma_picker.installer").uninstall_sigma_target()`
+
+This will bring up a picker with all installed plugins. Choose the one you want
+to uninstall and it will be removed from your system. The cache will update
+accordingly.
+
+
+  ~I’m using sigmac. I know it’s deprecated. Thanks for reminding me~.
+  Successfully moved to sigma-cli
+
+  I also wrote a silly little lsp to help me when writing sigma rules. You can
+  get it here <https://github.com/pop-ecx/sigma-ls.git>. Works pretty well with
+  the picker
+
+SUPPORT                          *sigma_picker.nvim-sigma_picker.nvim-support*
+
+Has been tested on neovim 0.9.5.
+
+Should work on neovim >=0.9.5
+
+
+TODO                                *sigma_picker.nvim-sigma_picker.nvim-todo*
+
+- ~[ ] Add a few more backends to be converted~
+- ☒ Move from sigmac to sigma-cli
+- ~[ ] Setup function is still WIP~
+
 ==============================================================================
-FEATURES                                                  *sigma_picker-features*
+2. Links                                             *sigma_picker.nvim-links*
 
-- Supports `.yml` and `.yaml` Sigma rule files.
-- Dynamically fetches backends and pipelines from `sigma-cli`.
-- Filters `sigma list targets` and `sigma list pipelines` to show only identifiers.
-- Strips empty lines from `sigma-cli` output.
-- Displays conversion results in a floating window.
-- Handles `sigma-cli` errors with user-friendly notifications.
-- Install sigma plugins from inside Neovim.
-- View installed targets and pipelines from inside Neovim.
+1. *License: Apache2.0*: https://img.shields.io/badge/License-Apache_2.0-blue.svg
+2. *Ask DeepWiki*: https://deepwiki.com/badge.svg
+3. *choose backend*: pick-backend.png
+4. *choose config*: pick-config.png
+5. *generated rule*: result.png
+6. *usage*: live.gif
 
-==============================================================================
-TROUBLESHOOTING                                                *sigma_picker-tshoot*
+Generated by panvimdoc <https://github.com/kdheepak/panvimdoc>
 
-- *Error: sigma_cli_check not found*:
-  Ensure `sigma-cli` is installed (`pip install sigma-cli`) and in your PATH.
-
-- *No backends available*:
-  Install a backend:
->
-    sigma plugin install splunk
-<
-- *Unwanted error messages*:
-  If "Error: Parsing Sigma rules" appears, it’s logged as a warning. Check your rule file for syntax issues.
-
-- *Floating window not showing*:
-  Verify `utils.lua` exists and Telescope is installed (`:Telescope`).
-
-For further issues, check `:messages` after running `<leader>sp`.
-
-==============================================================================
-CHANGELOG                                                  *sigma_picker-changelog*
-
-0.2.0 - 2025-05-26
-- Fixed `sigma_cli_check` errors.
-- Added `.yaml` support.
-- Filtered `sigma list` outputs and stripped empty lines.
-- Suppressed non-critical stderr messages.
-- Improved error handling and user notifications.
-- Updated documentation.
-- Support for fetching pipelines and targets from `sigma-cli`.
-==============================================================================
-
-vim:tw=78:ts=8:ft=help:norl:
+vim:tw=78:ts=8:noet:ft=help:norl:
