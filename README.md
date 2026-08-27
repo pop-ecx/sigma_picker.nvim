@@ -70,7 +70,6 @@ vim.keymap.set('n', '<leader>dz', spick.sigma_picker, {noremap = true , silent =
 ```lua
 spick.setup({
     picker_backend = "auto", -- "auto" | "telescope" | "native"
-    -- other config options...
 })
 ```
 
